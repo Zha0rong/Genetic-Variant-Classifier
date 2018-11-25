@@ -1,3 +1,3 @@
 # Genetic-Variant-Classifier
 
-_An Naive Bayes Classifier based on ClinVar Database_
+_An Naive Bayes Classifier based on ClinVar Database._
