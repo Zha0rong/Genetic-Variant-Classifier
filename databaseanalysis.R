@@ -41,22 +41,6 @@ rm(largedata)
 Conflict_testing_data_set=subset(workingdataset,grepl('Conflicting interpretations of pathogenicity',workingdataset$CLNSIG,ignore.case = TRUE))
 Training_data_set=subset(workingdataset,!grepl('Conflicting interpretations of pathogenicity',workingdataset$CLNSIG,ignore.case = TRUE))
 
-Total_ensembel_info=data.frame(getBM(attributes,filters = filters,values = list(Training_data_set[1,1],Training_data_set[1,2],Training_data_set[1,2]),mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
-for ( i in 1:nrow(workingdataset)) {
-  values= list(Training_data_set[i,1],Training_data_set[i,2],Training_data_set[i,2])
-  a=data.frame(getBM(attributes,filters = filters,values = values,mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
-  if (nrow(a)==1) {
-    Total_ensembel_info=rbind(Total_ensembel_info,a)
-  }
-  else {
-    a[1,1]=paste(toString(a[,1]))
-    a[1,2]=paste(toString(a[,2]))
-    a[1,3]=paste(toString(a[,3]))
-    Total_ensembel_info=rbind(Total_ensembel_info,a[1,])
-  }
-  print(i)
-}
-
 #This chunck of codes collects the amount of types of variants in the database
 Typesofvariant=data.frame(table(unlist(Training_data_set$CLNVC)),stringsAsFactors = FALSE)
 colnames(Typesofvariant)[1]='Types'
@@ -214,3 +198,44 @@ for (i in 1:nrow(Feature_type_of_consequence)) {
 Feature_type_of_consequence$Pathogenic=(Feature_type_of_consequence$Pathogenic+1)/(nrow(Pathogenic)+1*nrow(Feature_type_of_consequence))
 Feature_type_of_consequence$Benign=(Feature_type_of_consequence$Benign+1)/(nrow(Benign)+1*nrow(Feature_type_of_consequence))
 rm(c,i,j,k)
+####################################################
+Pathogen_ensembel_info=data.frame(getBM(attributes,filters = filters,values = list(Pathogenic[1,1],Pathogenic[1,2],Pathogenic[1,2]),mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
+Pathogen_ensembel_info[1,1]=paste(toString(Pathogen_ensembel_info[,1]))
+Pathogen_ensembel_info[1,2]=paste(toString(Pathogen_ensembel_info[,2]))
+Pathogen_ensembel_info[1,3]=paste(toString(Pathogen_ensembel_info[,3]))
+Pathogen_ensembel_info=Pathogen_ensembel_info[1,]
+for ( i in 1:nrow(Pathogenic)) {
+  values= list(Pathogenic[i,1],Pathogenic[i,2],Pathogenic[i,2])
+  a=data.frame(getBM(attributes,filters = filters,values = values,mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
+  if (nrow(a)==1) {
+    Pathogen_ensembel_info=rbind(Pathogen_ensembel_info,a)
+  }
+  else {
+    a[1,1]=paste(toString(a[,1]))
+    a[1,2]=paste(toString(a[,2]))
+    a[1,3]=paste(toString(a[,3]))
+    Pathogen_ensembel_info=rbind(Pathogen_ensembel_info,a[1,])
+  }
+  print(i)
+}
+#####################################################
+Benign_ensembel_info=data.frame(getBM(attributes,filters = filters,values = list(Benign[1,1],Benign[1,2],Benign[1,2]),mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
+Benign_ensembel_info[1,1]=paste(toString(Benign_ensembel_info[,1]))
+Benign_ensembel_info[1,2]=paste(toString(Benign_ensembel_info[,2]))
+Benign_ensembel_info[1,3]=paste(toString(Benign_ensembel_info[,3]))
+Benign_ensembel_info=Benign_ensembel_info[1,]
+
+for ( i in 1:nrow(Benign)) {
+  values= list(Benign[i,1],Benign[i,2],Benign[i,2])
+  a=data.frame(getBM(attributes,filters = filters,values = values,mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
+  if (nrow(a)==1) {
+    Benign_ensembel_info=rbind(Benign_ensembel_info,a)
+  }
+  else {
+    a[1,1]=paste(toString(a[,1]))
+    a[1,2]=paste(toString(a[,2]))
+    a[1,3]=paste(toString(a[,3]))
+    Benign_ensembel_info=rbind(Benign_ensembel_info,a[1,])
+  }
+  print(i)
+}
