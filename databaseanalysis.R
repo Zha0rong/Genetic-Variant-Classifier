@@ -28,11 +28,14 @@ print('Finish loading in the vcf format database.')
 #                       10. Mutation tye
 #                       11. Consequence type
 #This for-loop strips off the SOI index (journal-related) from the data
-workingdataset=largedata[,c(1,2,4,5,10,11,17,18,19,20,25)]
-workingdataset[,11] = gsub('SO:\\d{7}\\|','',workingdataset[,11])
-workingdataset[,6] = gsub('_',' ',workingdataset[,6])
-workingdataset[,7] = gsub('_',' ',workingdataset[,7])
-#write.table(workingdataset,'working.tbl',quote = FALSE,sep = '\t')
+getting_information=function(Database) {
+  workingdataset=Database[,c(1,2,4,5,10,11,17,18,19,20,25)]
+  workingdataset[,11] = gsub('SO:\\d{7}\\|','',workingdataset[,11])
+  workingdataset[,6] = gsub('_',' ',workingdataset[,6])
+  workingdataset[,7] = gsub('_',' ',workingdataset[,7])
+  return(workingdataset)
+}
+workingdataset=getting_information(largedata)
 print('Finish loading the features and prior')
 rm(largedata)
 
@@ -198,6 +201,8 @@ for (i in 1:nrow(Feature_type_of_consequence)) {
 Feature_type_of_consequence$Pathogenic=(Feature_type_of_consequence$Pathogenic+1)/(nrow(Pathogenic)+1*nrow(Feature_type_of_consequence))
 Feature_type_of_consequence$Benign=(Feature_type_of_consequence$Benign+1)/(nrow(Benign)+1*nrow(Feature_type_of_consequence))
 rm(c,i,j,k)
+
+
 ####################################################
 Pathogen_ensembel_info=data.frame(getBM(attributes,filters = filters,values = list(Pathogenic[1,1],Pathogenic[1,2],Pathogenic[1,2]),mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
 Pathogen_ensembel_info[1,1]=paste(toString(Pathogen_ensembel_info[,1]))
@@ -218,13 +223,14 @@ for ( i in 1:nrow(Pathogenic)) {
   }
   print(i)
 }
+rm(i,values,a)
+Pathogenic=cbind(Pathogenic,Pathogen_ensembel_info)
 #####################################################
 Benign_ensembel_info=data.frame(getBM(attributes,filters = filters,values = list(Benign[1,1],Benign[1,2],Benign[1,2]),mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
 Benign_ensembel_info[1,1]=paste(toString(Benign_ensembel_info[,1]))
 Benign_ensembel_info[1,2]=paste(toString(Benign_ensembel_info[,2]))
 Benign_ensembel_info[1,3]=paste(toString(Benign_ensembel_info[,3]))
 Benign_ensembel_info=Benign_ensembel_info[1,]
-
 for ( i in 1:nrow(Benign)) {
   values= list(Benign[i,1],Benign[i,2],Benign[i,2])
   a=data.frame(getBM(attributes,filters = filters,values = values,mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
@@ -239,3 +245,5 @@ for ( i in 1:nrow(Benign)) {
   }
   print(i)
 }
+Benign=cbind(Benign,Benign_ensembel_info)
+####################################################
