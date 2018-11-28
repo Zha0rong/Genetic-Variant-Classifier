@@ -43,6 +43,8 @@ rm(largedata)
 ######This chunck of codes will handle the genetic variants as 'Conflicting of interpretation: These are the variants that researchers are not sure whether they are pathogenic or not. However, the number of reports of different interpretations are provided.#######
 Conflict_testing_data_set=subset(workingdataset,grepl('Conflicting interpretations of pathogenicity',workingdataset$CLNSIG,ignore.case = TRUE))
 Training_data_set=subset(workingdataset,!grepl('Conflicting interpretations of pathogenicity',workingdataset$CLNSIG,ignore.case = TRUE))
+Pathogenic=subset(Training_data_set,grepl('pathogenic|likely pathogenic',Training_data_set$CLNSIG,ignore.case = TRUE))
+Benign=subset(Training_data_set,grepl('benign|likely benign',Training_data_set$CLNSIG,ignore.case = TRUE))
 ######This chunck of codes collects the amount of types of variants in the database######
 Typesofvariant=data.frame(table(unlist(Training_data_set$CLNVC)),stringsAsFactors = FALSE)
 colnames(Typesofvariant)[1]='Types'
@@ -117,7 +119,7 @@ Types_collectors_multi_sep = function(Data,column) {
         else {
           significanceofvariant[toString(variant[i,1])] = toString(variant[i,1])
         }}
-      
+
     }
   }
   return(significanceofvariant)
@@ -142,11 +144,6 @@ for (i in 1:nrow(Prior_Probability)) {
 }
 Prior_Probability$Probability=Prior_Probability$Probability/nrow(Training_data_set)
 rm(i,j,Initial_Prior_Probability)
-
-
-
-
-
 ######Get the features' likelihood.######
 feature_calculator = function (Pathogenic,Benign,column,feature,output) {
   result=data.frame(matrix(unlist(feature)),stringsAsFactors = FALSE)
@@ -170,45 +167,8 @@ feature_calculator = function (Pathogenic,Benign,column,feature,output) {
   result$Benign=(result$Benign+1)/(nrow(Benign)+1*nrow(result))
   return(result)
 }
-Pathogenic=subset(Training_data_set,grepl('pathogenic|likely pathogenic',Training_data_set$CLNSIG,ignore.case = TRUE))
-Benign=subset(Training_data_set,grepl('benign|likely benign',Training_data_set$CLNSIG,ignore.case = TRUE))
-Feature_type_of_variant=data.frame(Typesofvariant[,1],stringsAsFactors = FALSE)
-colnames(Feature_type_of_variant)[1]='Variant'
-Feature_type_of_variant$Pathogenic=rep(0,nrow(Feature_type_of_variant))
-Feature_type_of_variant$Benign=rep(0,nrow(Feature_type_of_variant))
-p=data.frame(table(Pathogenic$CLNVC))
-b=data.frame(table(Benign$CLNVC))
-for (i in 1:nrow(Feature_type_of_variant)) {
-  for (j in 1:nrow(p)) {
-    if (grepl(p[j,1],Feature_type_of_variant[i,1],ignore.case = TRUE)) {Feature_type_of_variant[i,2]=p[j,2]}
-  }
-  for (k in 1:nrow(b)) {
-    if (grepl(b[k,1],Feature_type_of_variant[i,1],ignore.case = TRUE)) {Feature_type_of_variant[i,3]=b[k,2]}
-  }
-}
-rm(i,j,k,p,b)
-Feature_type_of_variant$Pathogenic=(Feature_type_of_variant$Pathogenic+1)/(nrow(Pathogenic)+1*nrow(Feature_type_of_variant))
-Feature_type_of_variant$Benign=(Feature_type_of_variant$Benign+1)/(nrow(Benign)+1*nrow(Feature_type_of_variant))
-Feature_type_of_consequence=data.frame(matrix(unlist(consequenceofvariant)),stringsAsFactors = FALSE)
-colnames(Feature_type_of_consequence)='Consequence'
-Feature_type_of_consequence$Pathogenic=rep(0,nrow(Feature_type_of_consequence))
-Feature_type_of_consequence$Benign=rep(0,nrow(Feature_type_of_consequence))
-for (i in 1:nrow(Feature_type_of_consequence)) {
-  c=Feature_type_of_consequence[i,1]
-  for (j in 1:nrow(Pathogenic)) {
-    if (grepl(c,Pathogenic$MC[j],ignore.case = TRUE)) {
-      Feature_type_of_consequence[i,2] = Feature_type_of_consequence[i,2]+1
-    }
-  }
-  for (k in 1:nrow(Benign)) {
-    if (grepl(c,Benign$MC[k],ignore.case = TRUE)) {
-      Feature_type_of_consequence[i,3] = Feature_type_of_consequence[i,3]+1
-    }
-  }
-}
-Feature_type_of_consequence$Pathogenic=(Feature_type_of_consequence$Pathogenic+1)/(nrow(Pathogenic)+1*nrow(Feature_type_of_consequence))
-Feature_type_of_consequence$Benign=(Feature_type_of_consequence$Benign+1)/(nrow(Benign)+1*nrow(Feature_type_of_consequence))
-rm(c,i,j,k)
+Feature_type_of_variant=feature_calculator(Pathogenic,Benign,10,Typesofvariant[1],'types')
+Feature_type_of_consequence=feature_calculator(Pathogenic,Benign,10,consequenceofvariant,'consequence')
 ######Ensembl Information retrieve, do not use now.######
 ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
   Result=data.frame(getBM(attributes,filters = filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
@@ -228,7 +188,6 @@ ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
       a[1,3]=paste(toString(a[,3]))
       Result=rbind(Result,a[1,])
     }
-    print(i)
   }
   rm(i,values,a)
   Data=cbind(Data,Result)
@@ -236,6 +195,23 @@ ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
 }
 Pathogenic=ensembl_info_retrieve(Pathogenic,ensembl,filters,attributes)
 Benign=ensembl_info_retrieve(Benign,ensembl,filters,attributes)
+Slimer=function(Data,column) {
+  Data=Data
+  for (i in 1:nrow(Data)) {
+    a=data.frame(data.frame(table(unlist(strsplit(Data[i,column],', '))),stringsAsFactors = FALSE)[,1],stringsAsFactors = FALSE)
+    if(nrow(a) > 1) {
+      b=''
+      for (i in 1:nrow(a)) {
+        b=paste(b,a[i,1],',')
+      }
+      Data[i,column]=b
+
+    }
+    else{Data[i,column]=toString(a[1,1])}
+  }
+  return(Data)
+}
+#Optional Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)
 ######Continue to get features' likelihood######
 Gene_type_of_Variant_Pathogenic=Types_collectors(Pathogenic,13,', ')
 Gene_type_of_Variant_Benign=Types_collectors(Benign,13,', ')
@@ -251,3 +227,4 @@ for (i in 1:length(Gene_type_of_Variant_Pathogenic)) {
   else {Gene_type_of_Variant[a]=a}
 }
 rm(Gene_type_of_Variant_Benign,Gene_type_of_Variant_Pathogenic)
+Feature_gene_type_of_variant=feature_calculator(Pathogenic,Benign,13,Gene_type_of_Variant,'Gene_type')
