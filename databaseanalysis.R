@@ -49,6 +49,31 @@ Typesofvariant=data.frame(table(unlist(Training_data_set$CLNVC)),stringsAsFactor
 colnames(Typesofvariant)[1]='Types'
 
 #This chunck of for loops collects the amount of types of consequences in the database
+Types_collectors = function(Data,column,sep) {
+  data=data.frame(data.frame(table(Data[,column]),stringsAsFactors = FALSE)[,1],stringsAsFactors = FALSE)
+  result=list()
+  for (i in 1:nrow(data)) {
+    if (grepl(sep,data[i,1])) {
+      listofdata=data.frame(strsplit(toString(data[i,1]),split = sep),stringsAsFactors = FALSE)
+      colnames(listofdata)='datas'
+      for (j in 1:nrow(listofdata)) {
+        if (listofdata[j,1] %in% result) {
+        }
+        else {
+          result[toString(listofdata[j,1])] = toString(listofdata[j,1])
+        }
+      }
+    }
+    else {
+      if (data[i,1] %in% result) {
+      }
+      else {
+        result[toString(data[i,1])] = toString(data[i,1])
+      }
+    }
+  }
+  return(result)
+}
 consequence=data.frame(data.frame(table(Training_data_set[,11]),stringsAsFactors = FALSE)[,1],stringsAsFactors = FALSE)
 consequenceofvariant=list()
 for (i in 1:nrow(consequence)) {
