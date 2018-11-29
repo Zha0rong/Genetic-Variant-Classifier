@@ -195,6 +195,7 @@ ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
 }
 Pathogenic=ensembl_info_retrieve(Pathogenic,ensembl,filters,attributes)
 Benign=ensembl_info_retrieve(Benign,ensembl,filters,attributes)
+
 #Optional Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)
 Slimer=function(Data,column) {
   Data=Data
