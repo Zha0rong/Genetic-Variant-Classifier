@@ -195,6 +195,7 @@ ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
 }
 Pathogenic=ensembl_info_retrieve(Pathogenic,ensembl,filters,attributes)
 Benign=ensembl_info_retrieve(Benign,ensembl,filters,attributes)
+#Optional Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)
 Slimer=function(Data,column) {
   Data=Data
   for (i in 1:nrow(Data)) {
@@ -211,8 +212,9 @@ Slimer=function(Data,column) {
   }
   return(Data)
 }
-#Optional Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)
 ######Continue to get features' likelihood######
+#If you have run 'Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)'
+# Gene_type_of_Variant = Types_collectors(Training_data_set,13,', ')
 Gene_type_of_Variant_Pathogenic=Types_collectors(Pathogenic,13,', ')
 Gene_type_of_Variant_Benign=Types_collectors(Benign,13,', ')
 Gene_type_of_Variant=list()
