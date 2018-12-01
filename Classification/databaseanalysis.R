@@ -28,7 +28,7 @@ print('Finish loading in the vcf format database.')
 #                       9. Tetiary Significance
 #                       10. Mutation tye
 #                       11. Consequence type
-#This for-loop strips off the SOI index (journal-related) from the data
+######This code strips off the SOI index (journal-related) from the data######
 getting_information=function(Database) {
   workingdataset=Database[,c(1,2,4,5,10,11,17,18,19,20,25)]
   workingdataset[,11] = gsub('SO:\\d{7}\\|','',workingdataset[,11])
@@ -119,7 +119,7 @@ Types_collectors_multi_sep = function(Data,column) {
         else {
           significanceofvariant[toString(variant[i,1])] = toString(variant[i,1])
         }}
-
+      
     }
   }
   return(significanceofvariant)
@@ -144,6 +144,11 @@ for (i in 1:nrow(Prior_Probability)) {
 }
 Prior_Probability$Probability=Prior_Probability$Probability/nrow(Training_data_set)
 rm(i,j,Initial_Prior_Probability)
+
+
+
+
+
 ######Get the features' likelihood.######
 feature_calculator = function (Pathogenic,Benign,column,feature,output) {
   result=data.frame(matrix(unlist(feature)),stringsAsFactors = FALSE)
@@ -167,6 +172,7 @@ feature_calculator = function (Pathogenic,Benign,column,feature,output) {
   result$Benign=(result$Benign+1)/(nrow(Benign)+1*nrow(result))
   return(result)
 }
+
 Feature_type_of_variant=feature_calculator(Pathogenic,Benign,10,Typesofvariant[1],'types')
 Feature_type_of_consequence=feature_calculator(Pathogenic,Benign,10,consequenceofvariant,'consequence')
 ######Ensembl Information retrieve, do not use now.######
@@ -176,7 +182,7 @@ ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
   Result[1,2]=paste(toString(Result[,2]))
   Result[1,3]=paste(toString(Result[,3]))
   Result=Result[1,]
-  for ( i in 1:nrow(Data)) {
+  for ( i in 2:nrow(Data)) {
     values= list(Data[i,1],Data[i,2],Data[i,2])
     a=data.frame(getBM(attributes,filters = filters,values = values,mart = ensembl,uniqueRows = TRUE),stringsAsFactors = FALSE)
     if (nrow(a)==1) {
@@ -188,34 +194,53 @@ ensembl_info_retrieve=function(Data,ensembl,filters,attributes){
       a[1,3]=paste(toString(a[,3]))
       Result=rbind(Result,a[1,])
     }
+    print(i)
   }
-  rm(i,values,a)
   Data=cbind(Data,Result)
   return(Data)
 }
 Pathogenic=ensembl_info_retrieve(Pathogenic,ensembl,filters,attributes)
 Benign=ensembl_info_retrieve(Benign,ensembl,filters,attributes)
-
-#Optional Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)
-Slimer=function(Data,column) {
-  Data=Data
-  for (i in 1:nrow(Data)) {
-    a=data.frame(data.frame(table(unlist(strsplit(Data[i,column],', '))),stringsAsFactors = FALSE)[,1],stringsAsFactors = FALSE)
-    if(nrow(a) > 1) {
-      b=''
-      for (i in 1:nrow(a)) {
-        b=paste(b,a[i,1],',')
-      }
-      Data[i,column]=b
-
-    }
-    else{Data[i,column]=toString(a[1,1])}
+######Region_retriever######
+Region_retriver = function(Data,ensembl,filters) {
+  in_transcript=0
+  in_exon=0
+  in_intron=0
+  in_5utr=0
+  in_3utr=0
+  range_t=getBM(attributes = c('transcript_start','transcript_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
+  range_t=range_t[complete.cases(range_t),]
+  for (i in 1:nrow(range_t)) {
+    if (Data[1,2] %in% seq(range_t$transcript_start[i],range_t$transcript_end[i])) {in_transcript=in_transcript +1}
   }
-  return(Data)
+  if (in_transcript != 0) {
+    range_e=getBM(attributes = c('exon_chrom_start','exon_chrom_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
+    range_e=range_e[complete.cases(range_e),]
+    for (i in 1:nrow(range_e)) {
+      if (Data[1,2] %in% seq(range_e$exon_chrom_start[i],range_e$exon_chrom_end[i])) {in_exon=in_exon +1}
+    }
+    range_5=getBM(attributes = c('5_utr_start','5_utr_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
+    range_5=range_5[complete.cases(range_5),]
+    for (i in 1:nrow(range_5)) {
+      if (Data[1,2] %in% seq(range_5[i,1],range_5[i,2])) {in_5utr=in_5utr +1}
+    }
+    range_3=getBM(attributes = c('3_utr_start','3_utr_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
+    range_3=range_3[complete.cases(range_3),]
+    for (i in 1:nrow(range_3)) {
+      if (Data[1,2] %in% seq(range_3[i,1],range_3[i,2])) {in_3utr=in_3utr +1}
+    }
+    
+    if (in_exon==0) {
+      if (in_5utr > 0) {return('5utr')}
+      else if (in_3utr>0) {return('3utr')}
+      else {return('intron')}
+      
+    }
+    else {return('exon')}
+  }
+  else {return('non-transcript')}
 }
 ######Continue to get features' likelihood######
-#If you have run 'Training_data_set=ensembl_info_retrieve(Training_data_set,ensembl,filters,attributes)'
-# Gene_type_of_Variant = Types_collectors(Training_data_set,13,', ')
 Gene_type_of_Variant_Pathogenic=Types_collectors(Pathogenic,13,', ')
 Gene_type_of_Variant_Benign=Types_collectors(Benign,13,', ')
 Gene_type_of_Variant=list()
@@ -231,3 +256,8 @@ for (i in 1:length(Gene_type_of_Variant_Pathogenic)) {
 }
 rm(Gene_type_of_Variant_Benign,Gene_type_of_Variant_Pathogenic)
 Feature_gene_type_of_variant=feature_calculator(Pathogenic,Benign,13,Gene_type_of_Variant,'Gene_type')
+######Export features into table######
+write.table(Feature_Chromosome,'Feature_Chromosome.csv',row.names = FALSE,sep = '\t',quote = FALSE)
+write.table(Feature_gene_type_of_variant,'Feature_gene_type_of_variant.csv',row.names = FALSE,sep = '\t',quote = FALSE)
+write.table(Feature_type_of_consequence,'Feature_type_of_consequence.csv',row.names = FALSE,sep = '\t',quote = FALSE)
+write.table(Feature_type_of_variant,'Feature_type_of_variant.csv',row.names = FALSE,sep = '\t',quote = FALSE)
