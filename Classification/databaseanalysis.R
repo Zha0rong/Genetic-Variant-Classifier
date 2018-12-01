@@ -119,7 +119,7 @@ Types_collectors_multi_sep = function(Data,column) {
         else {
           significanceofvariant[toString(variant[i,1])] = toString(variant[i,1])
         }}
-      
+
     }
   }
   return(significanceofvariant)
@@ -210,33 +210,36 @@ Region_retriver = function(Data,ensembl,filters) {
   in_3utr=0
   range_t=getBM(attributes = c('transcript_start','transcript_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
   range_t=range_t[complete.cases(range_t),]
-  for (i in 1:nrow(range_t)) {
-    if (Data[1,2] %in% seq(range_t$transcript_start[i],range_t$transcript_end[i])) {in_transcript=in_transcript +1}
-  }
+  if (nrow(range_t)!=0){
+    for (i in 1:nrow(range_t)) {
+      if (Data[1,2] %in% seq(range_t$transcript_start[i],range_t$transcript_end[i])) {in_transcript=in_transcript +1}
+    }}
   if (in_transcript != 0) {
     range_e=getBM(attributes = c('exon_chrom_start','exon_chrom_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
     range_e=range_e[complete.cases(range_e),]
-    for (i in 1:nrow(range_e)) {
-      if (Data[1,2] %in% seq(range_e$exon_chrom_start[i],range_e$exon_chrom_end[i])) {in_exon=in_exon +1}
-    }
+    if (nrow(range_e)!=0){
+      for (i in 1:nrow(range_e)) {
+        if (Data[1,2] %in% seq(range_e$exon_chrom_start[i],range_e$exon_chrom_end[i])) {in_exon=in_exon +1}
+      }}
     range_5=getBM(attributes = c('5_utr_start','5_utr_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
     range_5=range_5[complete.cases(range_5),]
-    for (i in 1:nrow(range_5)) {
-      if (Data[1,2] %in% seq(range_5[i,1],range_5[i,2])) {in_5utr=in_5utr +1}
-    }
+    if (nrow(range_5)!=0){
+      for (i in 1:nrow(range_5)) {
+        if (Data[1,2] %in% seq(range_5[i,1],range_5[i,2])) {in_5utr=in_5utr +1}
+      }}
     range_3=getBM(attributes = c('3_utr_start','3_utr_end'),filters=filters,values = list(Data[1,1],Data[1,2],Data[1,2]),mart = ensembl)
     range_3=range_3[complete.cases(range_3),]
-    for (i in 1:nrow(range_3)) {
-      if (Data[1,2] %in% seq(range_3[i,1],range_3[i,2])) {in_3utr=in_3utr +1}
-    }
-    
-    if (in_exon==0) {
-      if (in_5utr > 0) {return('5utr')}
-      else if (in_3utr>0) {return('3utr')}
-      else {return('intron')}
-      
-    }
-    else {return('exon')}
+    if (nrow(range_3)!=0){
+      for (i in 1:nrow(range_3)) {
+        if (Data[1,2] %in% seq(range_3[i,1],range_3[i,2])) {in_3utr=in_3utr +1}
+      }}
+    location = ''
+    if (in_exon > 0) {location=paste(location,'exon')}
+    if (in_5utr > 0) {location=paste(location,'5_utr')}
+    if (in_3utr>0) {location=paste(location,'3_utr')}
+    intron=in_exon+in_3utr+in_5utr
+    if (intron == 0) {location='intron'}
+    return(location)
   }
   else {return('non-transcript')}
 }
